@@ -44,9 +44,9 @@ import javax.sql.CommonDataSource
 @MediumTest
 class ReminderListFragmentTest {
 
-//    TODO: test the navigation of the fragments.
-//    TODO: test the displayed data on the UI.
-//    TODO: add testing for the error messages.
+//    DONE: test the navigation of the fragments.
+//    DONE: test the displayed data on the UI.
+//    DONE: add testing for the error messages.
 
     @get:Rule
     var instantExecutorRule = InstantTaskExecutorRule()
