@@ -5,6 +5,7 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.MediumTest
+import com.udacity.project4.MainCoroutineRule
 import com.udacity.project4.locationreminders.data.dto.ReminderDTO
 import com.udacity.project4.locationreminders.data.dto.Result
 import kotlinx.coroutines.Dispatchers
@@ -19,6 +20,7 @@ import org.hamcrest.CoreMatchers.instanceOf
 import org.hamcrest.MatcherAssert.assertThat
 import org.junit.*
 import org.junit.runner.RunWith
+import com.google.common.truth.Truth.assertThat
 
 @ExperimentalCoroutinesApi
 @RunWith(AndroidJUnit4::class)
@@ -26,15 +28,14 @@ import org.junit.runner.RunWith
 @MediumTest
 class RemindersLocalRepositoryTest {
 
-
     private lateinit var remindersLocalRepository: RemindersLocalRepository
     private lateinit var database: RemindersDatabase
-    private val testDispatcher = TestCoroutineDispatcher()
-    private val testScope = TestCoroutineScope(testDispatcher)
-
+    //    private val testDispatcher = TestCoroutineDispatcher()
+//    private val testScope = TestCoroutineScope(testDispatcher)
     @get:Rule
     var instantExecutorRule = InstantTaskExecutorRule()
-
+    @get:Rule
+    var mainCoroutineRule = MainCoroutineRule()
 
     @Before
     fun setUp(){
@@ -61,7 +62,14 @@ class RemindersLocalRepositoryTest {
     }
 
     @Test
-    fun getReminders() = testScope.runBlockingTest {
+    fun saveReminder_getReminder() = mainCoroutineRule.runBlockingTest {
+        val reminder = getReminder()
+        remindersLocalRepository.saveReminder(reminder)
+        assertThat((remindersLocalRepository.getReminders() as? Result.Success)?.data)
+    }
+
+    @Test
+    fun saveReminder_getReminderByID() = mainCoroutineRule.runBlockingTest {
         val reminder = getReminder()
         remindersLocalRepository.saveReminder(reminder)
         val loadedReminder = (remindersLocalRepository.getReminder(reminder.id) as? Result.Success)?.data
@@ -69,4 +77,18 @@ class RemindersLocalRepositoryTest {
         Assert.assertThat<ReminderDTO>(loadedReminder as ReminderDTO, CoreMatchers.notNullValue())
         Assert.assertThat(loadedReminder, `is`(reminder))
     }
+
+    @Test
+    fun deleteAllReminders()= mainCoroutineRule.runBlockingTest {
+        val reminder1 = getReminder()
+        val reminder2 = getReminder()
+        val reminder3 = getReminder()
+        val remindersList : MutableList<ReminderDTO>? = mutableListOf(reminder1,reminder2,reminder3)
+        remindersList?.forEach {
+            remindersLocalRepository.saveReminder(it)
+        }
+        remindersLocalRepository.deleteAllReminders()
+        assertThat((remindersLocalRepository.getReminders() as? Result.Success)?.data).isEmpty()
+    }
+
 }
