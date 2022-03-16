@@ -1,16 +1,38 @@
 package com.udacity.project4
 
+import android.app.Activity
 import android.app.Application
+import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider.getApplicationContext
+import androidx.test.espresso.IdlingRegistry
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.filters.LargeTest
+import com.udacity.project4.locationreminders.RemindersActivity
 import com.udacity.project4.locationreminders.data.ReminderDataSource
+import com.udacity.project4.locationreminders.data.dto.ReminderDTO
 import com.udacity.project4.locationreminders.data.local.LocalDB
 import com.udacity.project4.locationreminders.data.local.RemindersLocalRepository
 import com.udacity.project4.locationreminders.reminderslist.RemindersListViewModel
 import com.udacity.project4.locationreminders.savereminder.SaveReminderViewModel
+import com.udacity.project4.util.DataBindingIdlingResource
+import com.udacity.project4.utils.EspressoIdlingResource
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runBlockingTest
+import org.junit.After
 import org.junit.Before
+import androidx.test.espresso.Espresso.onView
+import androidx.test.espresso.action.ViewActions
+import androidx.test.espresso.action.ViewActions.click
+import androidx.test.espresso.action.ViewActions.replaceText
+import androidx.test.espresso.assertion.ViewAssertions.matches
+import androidx.test.espresso.matcher.RootMatchers.withDecorView
+import androidx.test.espresso.matcher.ViewMatchers.*
+import com.google.android.material.internal.ContextUtils
+import com.udacity.project4.util.monitorActivity
+import org.hamcrest.CoreMatchers
+import org.hamcrest.Matchers
+import org.hamcrest.core.IsNot
+import org.junit.Test
 import org.junit.runner.RunWith
 import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.core.context.startKoin
@@ -66,6 +88,80 @@ class RemindersActivityTest :
     }
 
 
-//    TODO: add End to End testing to the app
+    //   : add End to End testing to the app
+    private val dataBindingIdlingResource = DataBindingIdlingResource()
 
+    /**
+     * Idling resources tell Espresso that the app is idle or busy. This is needed when operations
+     * are not scheduled in the main Looper (for example when executed on a different thread).
+     */
+    @Before
+    fun registerIdlingResource() {
+        IdlingRegistry.getInstance().register(EspressoIdlingResource.countingIdlingResource)
+        IdlingRegistry.getInstance().register(dataBindingIdlingResource)
+    }
+
+    /**
+     * Unregister your Idling Resource so it can be garbage collected and does not leak any memory.
+     */
+    @After
+    fun unregisterIdlingResource() {
+        IdlingRegistry.getInstance().unregister(EspressoIdlingResource.countingIdlingResource)
+        IdlingRegistry.getInstance().unregister(dataBindingIdlingResource)
+    }
+
+    private fun getReminder(): ReminderDTO {
+        return ReminderDTO(
+            title = "Title",
+            description = "description",
+            location = "location",
+            latitude = 1.1,
+            longitude = 2.2
+        )
+    }
+
+    // get activity context
+    private fun getActivity(activityScenario: ActivityScenario<RemindersActivity>): Activity? {
+        var activity: Activity? = null
+        activityScenario.onActivity {
+            activity = it
+        }
+        return activity
+    }
+
+
+    @Test
+    fun createReminder_checkIsDisplayed() = runBlockingTest {
+        // Start up reminder screen
+        val activityScenario = ActivityScenario.launch(RemindersActivity::class.java)
+        dataBindingIdlingResource.monitorActivity(activityScenario)
+        onView(withId(R.id.addReminderFAB)).perform(click())
+        onView(withId(R.id.saveReminder)).perform(click())
+        //        Test for snack bar
+        onView(withId(com.google.android.material.R.id.snackbar_text))
+            .check(matches(withText(R.string.err_enter_title)))
+
+        onView(withId(R.id.reminderTitle)).perform(ViewActions.typeText("Title"))
+        onView(withId(R.id.reminderDescription)).perform(ViewActions.typeText("Description"))
+        onView(withId(R.id.selectLocation)).perform(click())
+        onView(withId(R.id.map)).perform(ViewActions.longClick())
+        onView(withId(R.id.save_btn)).perform(click())
+        onView(withId(R.id.saveReminder)).perform(click())
+        //Check if Location is Displayed
+        onView(withText("Title")).check(matches(isDisplayed()))
+        onView(withText("Description")).check(matches(isDisplayed()))
+
+        //Test the toast is displayed after reminder is saved
+        onView(withText(R.string.reminder_saved)).inRoot(
+            withDecorView(
+                IsNot.not(
+                    Matchers.`is`(
+                        ContextUtils.getActivity(appContext)?.window?.decorView
+                    )
+                )
+            )
+        ).check(matches(isDisplayed()))
+        //close the activity before resetting the db
+        activityScenario.close()
+    }
 }

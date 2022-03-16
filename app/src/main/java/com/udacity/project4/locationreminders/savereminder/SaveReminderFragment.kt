@@ -17,6 +17,7 @@ import android.view.ViewGroup
 import android.widget.Toast
 import androidx.core.app.ActivityCompat
 import androidx.databinding.DataBindingUtil
+import androidx.lifecycle.Observer
 import com.google.android.gms.common.api.ResolvableApiException
 import com.google.android.gms.location.*
 import com.google.android.material.snackbar.Snackbar
@@ -101,6 +102,9 @@ class SaveReminderFragment : BaseFragment() {
              * */
             if (viewModel.validateEnteredData(reminderData)) {
                 checkPermissionsAndStartGeofencing()
+                viewModel.showToast.observe(viewLifecycleOwner, Observer {
+                    Toast.makeText(activity, it, Toast.LENGTH_LONG).show()
+                })
             }
         }
     }
