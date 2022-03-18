@@ -91,4 +91,22 @@ class RemindersLocalRepositoryTest {
         assertThat((remindersLocalRepository.getReminders() as? Result.Success)?.data).isEmpty()
     }
 
+    @Test
+    fun noReminderFound_ErrorMessage() = runBlockingTest{
+       val reminderMessage =(remindersLocalRepository.getReminder(getReminder().id)as Result.Error).message
+        Assert.assertThat<String>(reminderMessage,CoreMatchers.notNullValue())
+        assertThat(reminderMessage).isEqualTo("Reminder not found!")
+    }
+
+    @Test
+    fun loadReminderWhenTasksAreUnavailable_callErrorToDisplay() = runBlockingTest {
+        val reminder = remindersLocalRepository.getReminder(getReminder().id)
+        assertThat(reminder).isInstanceOf(Result.Error::class.java)
+
+        reminder as Result.Error
+
+        assertThat(reminder.message).isEqualTo("Reminder not found!")
+        assertThat(reminder.statusCode).isNull()
+    }
+
 }

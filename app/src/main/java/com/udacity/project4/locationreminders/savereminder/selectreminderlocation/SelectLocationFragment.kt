@@ -4,10 +4,15 @@ package com.udacity.project4.locationreminders.savereminder.selectreminderlocati
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.DialogInterface
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.res.Resources
 import android.location.Location
+import android.location.LocationManager
+import android.net.Uri
 import android.os.Bundle
+import android.provider.Settings
 import android.view.*
 import android.widget.Toast
 import androidx.core.app.ActivityCompat
@@ -27,6 +32,10 @@ import com.udacity.project4.locationreminders.savereminder.SaveReminderViewModel
 import com.udacity.project4.utils.setDisplayHomeAsUpEnabled
 import org.koin.android.ext.android.inject
 import java.util.*
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
+import com.google.android.material.snackbar.Snackbar
+import org.koin.android.BuildConfig
 
 class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
 
@@ -37,6 +46,8 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
     private var location: LatLng? = null
     private var poi: PointOfInterest? = null
     private val REQUEST_LOCATION_PERMISSION = 1
+    private lateinit var requestPermissionLauncher: ActivityResultLauncher<String>
+    private lateinit var fusedLocationClient: FusedLocationProviderClient
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
@@ -48,6 +59,8 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
         binding.lifecycleOwner = this
         val mapFragment = childFragmentManager.findFragmentById(R.id.map) as SupportMapFragment?
         mapFragment?.getMapAsync(this)
+
+
 
         setHasOptionsMenu(true)
         setDisplayHomeAsUpEnabled(true)
@@ -98,7 +111,6 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
         map = googleMap!!
         setMapStyle(map)
         enableMyLocation()
-        zoomOnMe()
         setMapLongClick(map)
         setPoiClick(map)
     }
@@ -179,23 +191,52 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
 
     private fun isPermissionGranted(): Boolean {
         return ContextCompat.checkSelfPermission(
-            context!!,
+            requireContext(),
             Manifest.permission.ACCESS_FINE_LOCATION
         ) == PackageManager.PERMISSION_GRANTED
     }
 
-    @SuppressLint("MissingPermission")
-    private fun enableMyLocation() {
+    private fun checkPermissions() {
         if (isPermissionGranted()) {
-            map.setMyLocationEnabled(true)
+            enableMyLocation()
+        } else {
+            requestLocationPermissions()
         }
-        else {
-            ActivityCompat.requestPermissions(
-                requireActivity(),
-                arrayOf<String>(Manifest.permission.ACCESS_FINE_LOCATION),
-                REQUEST_LOCATION_PERMISSION
-            )
-        }
+    }
+
+    override fun onAttach(context: Context) {
+        super.onAttach(context)
+         requestPermissionLauncher =
+            registerForActivityResult(
+                ActivityResultContracts.RequestPermission()
+            ) { isGranted: Boolean ->
+                if (isGranted) {
+                    // Permission is granted. Continue the action or workflow in your
+                    // app.
+                    enableMyLocation()
+                } else {
+                    // Explain to the user that the feature is unavailable because the
+                    // features requires a permission that the user has denied. At the
+                    // same time, respect the user's decision. Don't link to system
+                    // settings in an effort to convince the user to change their
+                    // decision.
+                    Toast.makeText(context,"Location permission is required to pick reminder location!",
+                        Toast.LENGTH_LONG
+                    ).show()
+                    Snackbar.make(
+                        binding.fragmentLocation,
+                        R.string.permission_denied_explanation,
+                        Snackbar.LENGTH_LONG
+                    )
+                        .setAction(R.string.settings) {
+                            startActivity(Intent().apply {
+                                action = Settings.ACTION_APPLICATION_DETAILS_SETTINGS
+                                data = Uri.fromParts("package", BuildConfig.APPLICATION_ID, null)
+                                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                            })
+                        }.show()
+                }
+            }
     }
 
     override fun onRequestPermissionsResult(
@@ -230,12 +271,6 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
         }
     }
 
-    fun zoomOnMe() {
-        requestMyGpsLocation(requireContext()) { location ->
-            map?.animateCamera(CameraUpdateFactory.newLatLngZoom(
-                LatLng(location.latitude,location.longitude ), 10F ))
-        }
-    }
 
     private fun setMapStyle(map: GoogleMap) {
         try {
@@ -251,6 +286,42 @@ class SelectLocationFragment : BaseFragment(), OnMapReadyCallback {
             }
         } catch (e: Resources.NotFoundException) {
             Toast.makeText(context, "Can't find style. Error: ${e.message}", Toast.LENGTH_SHORT)
+                .show()
+        }
+    }
+
+    @SuppressLint("MissingPermission")
+    private fun enableMyLocation() {
+        if (isPermissionGranted()){
+            map.isMyLocationEnabled = true
+
+            fusedLocationClient = LocationServices.getFusedLocationProviderClient(requireActivity())
+            fusedLocationClient.lastLocation
+                .addOnSuccessListener { location: Location? ->
+                    zoomOnMe(location)
+                }
+        }else{
+            Toast.makeText(context,"Location permission is required to pick reminder location!",
+                Toast.LENGTH_LONG
+            ).show()
+            checkPermissions()
+        }
+    }
+
+    private fun requestLocationPermissions() {
+        if (isPermissionGranted())
+            return
+        requestPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+    }
+
+    private fun zoomOnMe(location: Location?) {
+        if (location != null) {
+            val latLng = LatLng(location.latitude, location.longitude)
+            //  zoom to the user location after taking his permission
+            val cameraUpdate = CameraUpdateFactory.newLatLngZoom(latLng, 12f)
+            map.animateCamera(cameraUpdate)
+        } else {
+            Toast.makeText(context, "Please Turn on Location", Toast.LENGTH_SHORT)
                 .show()
         }
     }

@@ -92,7 +92,7 @@ class SaveReminderFragment : BaseFragment() {
             val latitude = viewModel.latitude.value
             val longitude = viewModel.longitude.value
 
-//            TODO: use the user entered reminder details to:
+//            DONE: use the user entered reminder details to:
 //             1) add a geofencing request
 //             2) save the reminder to the local db
             reminderData = ReminderDataItem(title, description, location, latitude, longitude)
@@ -101,10 +101,10 @@ class SaveReminderFragment : BaseFragment() {
              * Only save reminder to local database only when geofence is successful
              * */
             if (viewModel.validateEnteredData(reminderData)) {
-                checkPermissionsAndStartGeofencing()
                 viewModel.showToast.observe(viewLifecycleOwner, Observer {
                     Toast.makeText(activity, it, Toast.LENGTH_LONG).show()
                 })
+                checkPermissionsAndStartGeofencing()
             }
         }
     }
@@ -131,10 +131,6 @@ class SaveReminderFragment : BaseFragment() {
         return foregroundLocationApproved && backgroundPermissionApproved
     }
 
-    override fun onStart() {
-        super.onStart()
-        requestForegroundAndBackgroundLocationPermissions()
-    }
 
     @TargetApi(29 )
     private fun requestForegroundAndBackgroundLocationPermissions() {

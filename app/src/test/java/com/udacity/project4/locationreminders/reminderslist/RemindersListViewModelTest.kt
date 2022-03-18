@@ -5,8 +5,6 @@ import android.os.Build
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.google.common.base.CharMatcher.`is`
-import com.google.common.truth.Truth
 import com.udacity.project4.locationreminders.MainCoroutineRule
 import com.udacity.project4.locationreminders.data.FakeDataSource
 import com.udacity.project4.locationreminders.data.dto.ReminderDTO
@@ -15,10 +13,9 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import org.junit.runner.RunWith
 import org.koin.core.context.stopKoin
 import getOrAwaitValue
+import com.google.common.truth.Truth.assertThat
 import kotlinx.coroutines.test.runBlockingTest
 import org.hamcrest.CoreMatchers
-import org.hamcrest.MatcherAssert
-import org.hamcrest.core.Is
 import org.junit.*
 import org.robolectric.annotation.Config
 import org.hamcrest.core.Is.`is`
@@ -71,7 +68,7 @@ class RemindersListViewModelTest {
     fun get_Reminders() = mainCoroutineRule.runBlockingTest {
         fakeDataSource = FakeDataSource(remindersList)
         reminderListViewModel.loadReminders()
-        Truth.assertThat(reminderListViewModel.remindersList.getOrAwaitValue().isNotEmpty())
+        assertThat(reminderListViewModel.remindersList.getOrAwaitValue().isNotEmpty())
     }
 
     @Test
@@ -99,6 +96,13 @@ class RemindersListViewModelTest {
             reminderListViewModel.showSnackBar.getOrAwaitValue(),
             CoreMatchers.`is`("No reminders found")
         )
+    }
+
+    @Test
+    fun shouldReturnError() = mainCoroutineRule.runBlockingTest {
+        fakeDataSource.setReturnError(true)
+        reminderListViewModel.loadReminders()
+        assertThat(reminderListViewModel.showSnackBar.getOrAwaitValue()).isNotEmpty()
     }
 
     @Test
