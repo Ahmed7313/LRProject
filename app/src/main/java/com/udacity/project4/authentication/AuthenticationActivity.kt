@@ -58,13 +58,14 @@ class AuthenticationActivity : AppCompatActivity() {
             if (resultCode == Activity.RESULT_OK) {
                 // sigin in successfully
                 Log.i(TAG, "Successfully signed in user ${FirebaseAuth.getInstance().currentUser?.displayName}!")
-                navigateToRemindersActivity()
+                val intent = Intent(this, RemindersActivity::class.java)
+                startActivity(intent)
 
             } else {
                 // response.getError().getErrorCode() and handle the error.
                 Log.i("FAILUREEEE:", "UNSUCCESSFUL ${response?.error?.errorCode}")
                 Toast.makeText(this, "${response?.error?.errorCode}", Toast.LENGTH_LONG).show()
-                return
+                finish()
 
             }
         }
@@ -89,10 +90,7 @@ class AuthenticationActivity : AppCompatActivity() {
                 .build(),
             SIGN_IN_REQUEST_CODE
         )
-    }
 
-    private fun navigateToRemindersActivity() {
-        startActivity(Intent(this, RemindersActivity::class.java))
-        finish()
+
     }
 }
