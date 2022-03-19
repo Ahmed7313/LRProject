@@ -42,15 +42,6 @@ https://user-images.githubusercontent.com/35776251/159115838-233b1ed2-dbae-47b7-
   Open project in android studio by clicking of File -> New -> Import project and choose the downloaded project
 
   Run the app
-
-  ## Contributing
-  Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
-
-  Please make sure to update tests as appropriate.
-
-  ## License
-  [MIT](https://choosealicense.com/licenses/mit/)
-
   
 
   ## Libraries
