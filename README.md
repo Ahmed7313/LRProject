@@ -34,11 +34,6 @@ https://user-images.githubusercontent.com/35776251/159115838-233b1ed2-dbae-47b7-
 
   Download and install latest android studio on your device.
 
-  Here is the link to download the latest version of android studio
-  Clone the project repository by running the following command line on a terminal
-
-  https://github.com/Ayodeji97/Reminder.git
-
   Open project in android studio by clicking of File -> New -> Import project and choose the downloaded project
 
   Run the app
